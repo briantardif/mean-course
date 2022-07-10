@@ -1,6 +1,6 @@
 import {Component, OnInit, EventEmitter, Output} from '@angular/core';
 import {Post} from '../post.model';
-import {NgForm} from '@angular/forms';
+import {FormControl, FormGroup, NgForm, Validators} from '@angular/forms';
 import {PostsService} from '../posts.service';
 import {ActivatedRoute, ParamMap} from '@angular/router';
 
@@ -13,8 +13,9 @@ export class PostCreateComponent implements OnInit {
 
   private mode = 'create';
   private id: string | null;
-  public post: Post | null;
+  public post: Post;
   isLoading = false;
+  form: FormGroup;
 
   constructor(
     private postsService: PostsService,
@@ -22,12 +23,15 @@ export class PostCreateComponent implements OnInit {
   ) {
     this.id = '';
     this.post = { content: '', id: '', title: ''};
+    this.form = new FormGroup({
+      title: new FormControl(null, { validators: [Validators.required, Validators.minLength(3)] }),
+      content: new FormControl(null, { validators: [Validators.required] }),
+    });
   }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((paramMap: ParamMap) => {
       if (paramMap.has('id')) {
-        console.log('inside edit mode');
         this.mode = 'edit';
         this.id = paramMap.get('id');
         if (this.id) {
@@ -37,6 +41,7 @@ export class PostCreateComponent implements OnInit {
               this.isLoading = false;
               const data = post.data;
               this.post = { id: data._id, title: data.title, content: data.content };
+              this.form.setValue({title: this.post.title, content: this.post.content});
             });
         }
       } else {
@@ -46,19 +51,19 @@ export class PostCreateComponent implements OnInit {
     });
   }
 
-  onSavePost(form: NgForm) {
-    if (form.invalid) {
+  onSavePost() {
+    if (this.form?.invalid) {
       return;
     }
     this.isLoading = true;
     if (this.mode === 'create') {
-      this.postsService.addPost(form.value.title, form.value.content);
+      this.postsService.addPost(this.form.value.title, this.form.value.content);
     } else {
       if (this.id) {
-        this.postsService.updatePost(this.id, form.value.title, form.value.content);
+        this.postsService.updatePost(this.id, this.form.value.title, this.form.value.content);
       }
     }
-    form.resetForm();
+    this.form.reset();
   }
 
 }

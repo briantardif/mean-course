@@ -5,3 +5,7 @@ textarea, mat-form-field {
 mat-spinner {
   margin: auto;
 }
+
+input[type="file"] {
+  visibility: hidden;
+}
