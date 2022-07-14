@@ -4,6 +4,7 @@ import {Subject} from 'rxjs';
 import { map } from 'rxjs/operators';
 import {HttpClient} from '@angular/common/http';
 import {Router} from '@angular/router';
+import {response} from 'express';
 
 @Injectable({
   providedIn: 'root'
@@ -23,7 +24,8 @@ export class PostsService {
           return {
             title: post.title,
             content: post.content,
-            id: post._id
+            id: post._id,
+            imagePath: post.imagePath
           }
         })
       }))
@@ -34,35 +36,42 @@ export class PostsService {
   }
 
   getPost(id: string) {
-    return this.http.get<{message: string, data: {_id: string, title: string, content: string}}>(`http://localhost:3000/api/post/${id}`);
+    return this.http.get<{message: string, data: {_id: string, title: string, content: string, imagePath: string}}>(`http://localhost:3000/api/post/${id}`);
   }
 
   getPostUpdateListener() {
     return this.postsUpdated.asObservable();
   }
 
-  addPost(title: string, content: string) {
-    const post = {
-      id: '',
-      title,
-      content
-    };
-    this.http.post('http://localhost:3000/api/post', post)
+  addPost(title: string, content: string, image: File) {
+    const postData = new FormData();
+    postData.append('title', title);
+    postData.append('content', content);
+    postData.append('image', image, title);
+    this.http.post<{message: string, post: Post}>('http://localhost:3000/api/post', postData)
       .subscribe((data: any) => {
-        post.id = data.postId;
-        this.posts.push(post);
+        const post: Post = { id: data.post.id, title, content, imagePath: data.post.imagePath};
         this.postsUpdated.next([...this.posts]);
         this.router.navigate(['/']);
       })
   }
 
-  updatePost(id: string, title: string, content: string) {
-    const post: Post = { id, title, content };
+  updatePost(id: string, title: string, content: string, image: File | string) {
+    let post: Post | FormData;
+    if (typeof(image) === 'object') {
+      post = new FormData();
+      post.append('id', id);
+      post.append('title', title);
+      post.append('content', content);
+      post.append('image', image, title);
+    } else {
+      post = { id, title, content, imagePath: image };
+    }
     this.http.put(`http://localhost:3000/api/post/${id}`, post)
       .subscribe(response => {
         const updatedPosts = [...this.posts];
-        const oldPostIndex = updatedPosts.findIndex(p => p.id === post.id);
-        updatedPosts[oldPostIndex] = post;
+        const oldPostIndex = updatedPosts.findIndex(p => p.id === id);
+        updatedPosts[oldPostIndex] = { id, title, content, imagePath: '' };
         this.posts = updatedPosts;
         this.postsUpdated.next([...this.posts]);
         this.router.navigate(['/']);
