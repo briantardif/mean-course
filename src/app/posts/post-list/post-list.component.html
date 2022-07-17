@@ -9,8 +9,8 @@
     </div>
     <p>{{ post.content }}</p>
     <mat-action-row>
-      <a mat-button [routerLink]="['/edit', post.id]" color="primary">EDIT</a>
-      <button mat-button color="warn" (click)="onDelete(post.id)">DELETE</button>
+      <button mat-button [routerLink]="['/edit', post.id]" color="primary" [disabled]="!isUserAuthenticated">EDIT</button>
+      <button mat-button color="warn" (click)="onDelete(post.id)" [disabled]="!isUserAuthenticated">DELETE</button>
     </mat-action-row>
   </mat-expansion-panel>
 </mat-accordion>
